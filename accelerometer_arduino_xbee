@@ -1,0 +1,132 @@
+/*****************************************************************
+XBee_Serial_Passthrough.ino
+
+Set up a software serial port to pass data between an XBee Shield
+and the serial monitor.
+
+Hardware Hookup:
+  The XBee Shield makes all of the connections you'll need
+  between Arduino and XBee. If you have the shield make
+  sure the SWITCH IS IN THE "DLINE" POSITION. That will connect
+  the XBee's DOUT and DIN pins to Arduino pins 2 and 3.
+*****************************************************************/
+// We'll use SoftwareSerial to communicate with the XBee:
+#include <SoftwareSerial.h>
+#include <Wire.h>
+#include <Adafruit_MMA8451.h>
+#include <Adafruit_Sensor.h>
+
+//#include <Xbee.h>
+//Xbee xbee = Xbee();
+
+int C=0;
+
+Adafruit_MMA8451 mma = Adafruit_MMA8451();
+
+
+// XBee's DOUT (TX) is connected to pin 2 (Arduino's Software RX)
+// XBee's DIN (RX) is connected to pin 3 (Arduino's Software TX)
+SoftwareSerial XBee(2, 3); // RX, TX
+
+void setup(void) {
+  // Set up both ports at 9600 baud. This value is most important
+  // for the XBee. Make sure the baud rate matches the config
+  // setting of your XBee.
+  XBee.begin(9600);
+  Serial.begin(9600);
+  
+  Serial.println("Adafruit MMA8451 test!");
+  
+  
+  
+  if (! mma.begin()) {
+    Serial.println("Couldnt start");
+    while (1);
+  }
+  Serial.println("MMA8451 found!");
+  
+  mma.setRange(MMA8451_RANGE_2_G);
+  
+  Serial.print("Range = "); Serial.print(2 << mma.getRange());  
+  Serial.println("G");
+  
+}
+
+
+void loop()
+{
+  
+ 
+	 // Read the 'raw' data in 14-bit counts
+  mma.read();
+  Serial.print("X:\t"); Serial.print(mma.x); 
+  Serial.print("\tY:\t"); Serial.print(mma.y); 
+  Serial.print("\tZ:\t"); Serial.print(mma.z); 
+  Serial.println();
+
+  /* Get a new sensor event */ 
+  sensors_event_t event; 
+  mma.getEvent(&event);
+
+  /* Display the results (acceleration is measured in m/s^2) */
+  Serial.print("X: \t"); Serial.print(event.acceleration.x); Serial.print("\t");
+  Serial.print("Y: \t"); Serial.print(event.acceleration.y); Serial.print("\t");
+  Serial.print("Z: \t"); Serial.print(event.acceleration.z); Serial.print("\t");
+  Serial.println("m/s^2 ");
+  
+ 
+  
+  /* Get the orientation of the sensor */
+  uint8_t o = mma.getOrientation();
+  
+  switch (o) {
+    case MMA8451_PL_PUF: 
+      Serial.println("Portrait Up Front");
+      break;
+    case MMA8451_PL_PUB: 
+      Serial.println("Portrait Up Back");
+      break;    
+    case MMA8451_PL_PDF: 
+      Serial.println("Portrait Down Front");
+      break;
+    case MMA8451_PL_PDB: 
+      Serial.println("Portrait Down Back");
+      break;
+    case MMA8451_PL_LRF: 
+      Serial.println("Landscape Right Front");
+      break;
+    case MMA8451_PL_LRB: 
+      Serial.println("Landscape Right Back");
+      break;
+    case MMA8451_PL_LLF: 
+      Serial.println("Landscape Left Front");
+      break;
+    case MMA8451_PL_LLB: 
+      Serial.println("Landscape Left Back");
+      break;
+    }
+  Serial.println();
+    delay(1000);
+		
+  if (Serial.available())
+  { // If data comes in from serial monitor, send it out to XBee
+    XBee.write(Serial.read());
+    	  }
+   if (XBee.available())
+  { // If data comes in from XBee, send it out to serial monitor
+    Serial.write(XBee.read());
+  }
+  
+   /*for(int C = 0; C < 10000; C++){ */
+   /* delay(500); */
+   /*Serial.println(C); */
+   /*} */
+   C++;
+   Serial.println(C);
+  
+   XBee.print("X: \t"); XBee.print(event.acceleration.x); XBee.print("\t");
+  XBee.print("Y: \t"); XBee.print(event.acceleration.y); XBee.print("\t");
+  XBee.print("Z: \t"); XBee.print(event.acceleration.z); XBee.print("\t");
+  XBee.println("m/s^2 "); XBee.println(C);
+  
+}
